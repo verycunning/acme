@@ -1,0 +1,7 @@
+node_modules
+artifacts
+cache
+contracts/Token.sol
+test/Token.js
+contracts/.xxx.swp
+.git-safe
