@@ -9,11 +9,12 @@ contract AcmeAllInOne {
     // Global state variable
 
     enum orderStatusEnum {
-        ONORDER,
+        ORDERED,
         PAID,
         DELIVERED,
         CANCELLED
     }
+
     struct orderRecordStruct {
         address customer;
         uint256 quantity;
@@ -39,7 +40,7 @@ contract AcmeAllInOne {
         uint32 orderNum;
     }
 
-    globalStateStruct private globalState;
+    globalStateStruct private _globalState;
 
     /*
      *
@@ -47,20 +48,20 @@ contract AcmeAllInOne {
      *
      */
     modifier onlyTreasurer() {
-        if (msg.sender != globalState.treasurer) {
+        if (msg.sender != _globalState.treasurer) {
             revert Unauthorized();
         }
         _;
     }
     modifier onlyAdmin() {
-        if (msg.sender != globalState.admin) {
+        if (msg.sender != _globalState.admin) {
             revert Unauthorized();
         }
         _;
     }
 
     modifier onlyManagers() {
-        if (globalState.managers[msg.sender] != true) {
+        if (_globalState.managers[msg.sender] != true) {
             revert Unauthorized();
         }
         _;
@@ -68,14 +69,14 @@ contract AcmeAllInOne {
 
     modifier nonReentrant() {
         // re-entrancyy check
-        require(!globalState.lock, "Reentrancy not allowed");
+        require(!_globalState.lock, "Reentrancy not allowed");
 
-        globalState.lock = true;
+        _globalState.lock = true;
         _;
     }
 
     function endReentrancyGuard() private {
-        globalState.lock = false;
+        _globalState.lock = false;
     }
 
     /*
@@ -93,57 +94,57 @@ contract AcmeAllInOne {
      *
      */
 
-    event ChangeAdmin(address newAdmin);
-    event ChangeTreasurer(address newTreasurer);
-    event NewManager(address newManager);
-    event CancelManager(address oldManager);
+    event ChangeAdmin(address admin);
+    event ChangeTreasurer(address treasurer);
+    event NewManager(address manager);
+    event CancelManager(address manager);
 
-    constructor(address _treasurer, uint256 widgetPrice) {
+    constructor(address treasurer, uint256 widgetPrice) {
         require(widgetPrice > 0);
         // grant admin to sender
-        globalState.admin = msg.sender;
-        globalState.treasurer = _treasurer;
+        _globalState.admin = msg.sender;
+        _globalState.treasurer = treasurer;
 
         // initialise index
 
-        globalState.numberOfManagers = 0;
-        globalState.lock = false;
+        _globalState.numberOfManagers = 0;
+        _globalState.lock = false;
 
-        globalState.widgetPrice = widgetPrice;
+        _globalState.widgetPrice = widgetPrice;
     }
 
-    function grantAdminRole(address newAdmin) public onlyAdmin {
-        globalState.admin = newAdmin;
-        emit ChangeAdmin(newAdmin);
+    function grantAdminRole(address admin) public onlyAdmin {
+        _globalState.admin = admin;
+        emit ChangeAdmin(admin);
     }
 
-    function grantTreasurerRole(address newTreasurer) public onlyAdmin {
-        globalState.treasurer = newTreasurer;
-        emit ChangeTreasurer(newTreasurer);
+    function grantTreasurerRole(address treasurer) public onlyAdmin {
+        _globalState.treasurer = treasurer;
+        emit ChangeTreasurer(treasurer);
     }
 
-    function registerManager(address newManager) public onlyAdmin {
-        globalState.managers[newManager] = true;
-        globalState.numberOfManagers++;
-        emit NewManager(newManager);
+    function registerManager(address manager) public onlyAdmin {
+        _globalState.managers[manager] = true;
+        _globalState.numberOfManagers++;
+        emit NewManager(manager);
     }
 
-    function cancelManager(address Manager) public onlyAdmin {
-        if (globalState.managers[Manager] != true) {
+    function cancelManager(address manager) public onlyAdmin {
+        if (_globalState.managers[manager] != true) {
             revert Unauthorized();
         }
-        globalState.managers[Manager] = false;
-        globalState.numberOfManagers--;
-        emit CancelManager(Manager);
+        _globalState.managers[manager] = false;
+        _globalState.numberOfManagers--;
+        emit CancelManager(manager);
     }
 
-    function setPrice(uint256 newPrice) public onlyTreasurer {}
+    function setPrice(uint256 price) public onlyTreasurer {}
 
     function makeWidgets(uint256 _quantity) public onlyManagers nonReentrant {
         if (_quantity < 0) {
             revert Unauthorized();
         }
-        globalState.widgets[globalState.treasurer] += _quantity;
+        _globalState.widgets[_globalState.treasurer] += _quantity;
         endReentrancyGuard();
     }
 
